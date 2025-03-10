@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ollama Vision Analysis</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .container {
+            text-align: center;
+        }
+        .upload-form {
+            margin: 20px 0;
+            padding: 20px;
+            border: 2px dashed #ccc;
+            border-radius: 5px;
+        }
+        #preview {
+            max-width: 100%;
+            max-height: 400px;
+            margin: 20px 0;
+            display: none;
+        }
+        #result {
+            margin: 20px 0;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            display: none;
+        }
+        .loading {
+            display: none;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Ollama Vision Analysis</h1>
+        <div class="upload-form">
+            <form id="uploadForm">
+                <input type="file" id="imageInput" accept="image/*" onchange="previewImage(event)">
+                <button type="submit">解析する</button>
+            </form>
+        </div>
+        <img id="preview" src="" alt="プレビュー">
+        <div class="loading" id="loading">解析中...</div>
+        <div id="result"></div>
+    </div>
+
+    <script>
+        function previewImage(event) {
+            const preview = document.getElementById('preview');
+            const file = event.target.files[0];
+            const reader = new FileReader();
+
+            reader.onload = function() {
+                preview.src = reader.result;
+                preview.style.display = 'block';
+            }
+
+            if (file) {
+                reader.readAsDataURL(file);
+            }
+        }
+
+        document.getElementById('uploadForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const formData = new FormData();
+            const imageInput = document.getElementById('imageInput');
+            const loading = document.getElementById('loading');
+            const result = document.getElementById('result');
+
+            if (!imageInput.files[0]) {
+                alert('画像を選択してください');
+                return;
+            }
+
+            formData.append('image', imageInput.files[0]);
+            
+            loading.style.display = 'block';
+            result.style.display = 'none';
+
+            try {
+                const response = await fetch('/analyze', {
+                    method: 'POST',
+                    body: formData
+                });
+                const data = await response.json();
+                
+                if (data.error) {
+                    result.textContent = `エラー: ${data.error}`;
+                } else {
+                    result.textContent = data.message;
+                }
+            } catch (error) {
+                result.textContent = `エラー: ${error.message}`;
+            } finally {
+                loading.style.display = 'none';
+                result.style.display = 'block';
+            }
+        });
+    </script>
+</body>
+</html>
